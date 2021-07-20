@@ -1,0 +1,7 @@
+As the services are running on container so data is volatile what ever stored in the container.But the data which is stored in the mapped volume is persistent.
+we should take the backup of the filesystem/volumes from the host machine where the containers are storing data.
+Also any manual changes done to the docker cnfiguration will also loose in the next restart so these kind of action should be avoided.
+The backup of the repository is very crusial as it stores the images and images is the source of a container.
+Addition to this we must backup out secres like certificates,keystores securely.
+
+All the backup taken must be encrypted and it should be automated.

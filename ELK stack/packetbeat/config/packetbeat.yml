@@ -1,0 +1,76 @@
+name: "packetbeat"
+setup.dashboards.enabled: true
+
+# Forcing Elasticsearch index template 
+setup.template.overwrite: true
+
+setup.kibana.host: "https://kibana:5601"
+setup.kibana.protocol: "https"
+setup.kibana.ssl.enabled: true
+setup.kibana.username: '${ELASTIC_USERNAME:}'
+setup.kibana.password: '${ELASTIC_PASSWORD:}'
+
+setup.kibana.ssl.certificate_authorities: ${ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES}
+setup.kibana.ssl.certificate: ${SERVER_SSL_KEY}
+setup.kibana.ssl.key: ${SERVER_SSL_CERTIFICATE}
+
+setup.kibana.ssl.verification_mode: none
+
+packetbeat.interfaces.device: any
+
+packetbeat.flows:
+  timeout: 30s
+  period: 10s
+
+packetbeat.protocols.dns:
+  ports: [53]
+  include_authorities: true
+  include_additionals: true
+
+packetbeat.protocols.http:
+  ports: [80, 5601, 9200, 8080, 8081, 5000, 8002]
+
+packetbeat.protocols.memcache:
+  ports: [11211]
+
+packetbeat.protocols.mysql:
+  ports: [3306]
+
+packetbeat.protocols.pgsql:
+  ports: [5432]
+
+packetbeat.protocols.redis:
+  ports: [6379]
+
+packetbeat.protocols.thrift:
+  ports: [9090]
+
+packetbeat.protocols.mongodb:
+  ports: [27017]
+
+packetbeat.protocols.cassandra:
+  ports: [9042]
+
+#processors:
+#- add_cloud_metadata: ~
+
+output.logstash:
+  hosts: ["logstash:5042"]
+  ssl.certificate_authorities: ["/etc/pki/ca-trust/source/anchors/ca.crt"]
+  ssl.certificate: ${CONFIG_DIR}/packetbeat.crt
+  ssl.key: ${CONFIG_DIR}/packetbeat.key
+  index: packetbeat
+
+# Commented out for reference if you wanted
+# to send directly to elasticsearch
+
+#output.elasticsearch:
+#  hosts: ["https://elasticsearch:9200"]
+#  protocol: "https"
+#  username: '${ELASTIC_USERNAME}'
+#  password: '${ELASTIC_PASSWORD}'
+#  ssl.enabled: true
+#  ssl.certificate_authorities: ["${CONFIG_DIR}/ca.crt"]
+#  ssl.verification_mode: none
+#  ssl.certificate: "${CONFIG_DIR}/logstash.crt"
+#  ssl.key: "${CONFIG_DIR}/logstash.key"

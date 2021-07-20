@@ -1,0 +1,14 @@
+## Cluster Settings
+cluster.name: "elk-pipedrive-cluster"
+network.host: "0.0.0.0"
+http.host: 0.0.0.0
+
+## License
+xpack.license.self_generated.type: trial
+
+# Security
+xpack.security.enabled: true
+xpack.monitoring.collection.enabled: true
+xpack.security.authc.token.enabled: true
+xpack.security.authc.api_key.enabled: true
+

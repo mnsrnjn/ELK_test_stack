@@ -1,0 +1,238 @@
+version: '3.3'
+
+services:
+	
+  esc01:
+    container_name: esc01
+    hostname: esc01
+    build:
+      context: elasticsearch/
+    restart: unless-stopped
+    environment:
+      - node.name: esc01
+      - cluster.name: es-docker-cluster
+      - discovery.seed_hosts: esc02,esc03
+      - cluster.initial_master_nodes: esc01,esc02,esc03
+      - bootstrap.memory_lock:true
+      - "ES_JAVA_OPTS: -Xms1g -Xmx1g"
+      - ELASTIC_PASSWORD: ELASTIC_PASSWORD 
+      - xpack.license.self_generated.type: trial 
+      - xpack.security.enabled: true
+      - xpack.security.http.ssl.enabled: true 
+      - xpack.security.http.ssl.key: $CERTS_DIR/esc01/esc01.key
+      - xpack.security.http.ssl.certificate_authorities: $CERTS_DIR/ca/ca.crt
+      - xpack.security.http.ssl.certificate: $CERTS_DIR/esc01/esc01.crt
+      - xpack.security.transport.ssl.enabled: true 
+      - xpack.security.transport.ssl.verification_mode: certificate 
+      - xpack.security.transport.ssl.certificate_authorities: $CERTS_DIR/ca/ca.crt
+      - xpack.security.transport.ssl.certificate: $CERTS_DIR/esc01/esc01.crt
+      - xpack.security.transport.ssl.key: $CERTS_DIR/esc01/esc01.key
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - certs:$CERTS_DIR
+    ports:
+      - 9200:9200
+    networks:
+      - pipedrive
+
+    healthcheck:
+      test: curl --cacert $CERTS_DIR/ca/ca.crt -s https://localhost:9200 >/dev/null; if [[ $$? == 52 ]]; then echo 0; else echo 1; fi
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  esc02:
+    container_name: esc01
+    hostname: esc01
+    build:
+      context: elasticsearch/
+    restart: unless-stopped
+    environment:
+      - node.name: esc02
+      - cluster.name: es-docker-cluster
+      - discovery.seed_hosts:esc01,esc03
+      - cluster.initial_master_nodes: esc01,esc02,esc03
+      - bootstrap.memory_lock: true
+      - "ES_JAVA_OPTS: -Xms1g -Xmx1g"
+      - ELASTIC_PASSWORD: $ELASTIC_PASSWORD
+      - xpack.license.self_generated.type: trial
+      - xpack.security.enabled: true
+      - xpack.security.http.ssl.enabled:true
+      - xpack.security.http.ssl.key: $CERTS_DIR/esc02/esc02.key
+      - xpack.security.http.ssl.certificate_authorities:$CERTS_DIR/ca/ca.crt
+      - xpack.security.http.ssl.certificate: $CERTS_DIR/esc02/esc02.crt
+      - xpack.security.transport.ssl.enabled:true
+      - xpack.security.transport.ssl.verification_mode: certificate
+      - xpack.security.transport.ssl.certificate_authorities:$CERTS_DIR/ca/ca.crt
+      - xpack.security.transport.ssl.certificate: $CERTS_DIR/esc02/esc02.crt
+      - xpack.security.transport.ssl.key:$CERTS_DIR/esc02/esc02.key
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data02:/usr/share/elasticsearch/data
+      - certs:$CERTS_DIR
+    networks:
+      - pipedrive
+
+  esc03:
+    container_name: esc03
+	container_name: esc01
+    hostname: esc01
+    build:
+      context: elasticsearch/
+    restart: unless-stopped
+    environment:
+      node.name: esc03
+      cluster.name: es-docker-cluster
+      discovery.seed_hosts:esc01,esc02
+      cluster.initial_master_nodes:esc01,esc02,esc03
+      bootstrap.memory_lock:true
+      "ES_JAVA_OPTS: -Xms1g -Xmx1g"
+      ELASTIC_PASSWORD: $ELASTIC_PASSWORD
+      xpack.license.self_generated.type: trial
+      xpack.security.enabled: true
+      xpack.security.http.ssl.enabled: true
+      xpack.security.http.ssl.key: $CERTS_DIR/esc03/esc03.key
+      xpack.security.http.ssl.certificate_authorities: $CERTS_DIR/ca/ca.crt
+      xpack.security.http.ssl.certificate: $CERTS_DIR/esc02/esc02.crt
+      xpack.security.transport.ssl.enabled: true
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.certificate_authorities: $CERTS_DIR/ca/ca.crt
+      xpack.security.transport.ssl.certificate: $CERTS_DIR/esc03/esc03.crt
+      xpack.security.transport.ssl.key: $CERTS_DIR/esc03/esc03.key
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data03:/usr/share/elasticsearch/data
+      - certs:$CERTS_DIR
+    networks:
+      - pipedrive
+
+  kibana:
+    container_name: kibana
+    hostname: kibana
+    build:
+      context: kibana/
+    restart: unless-stopped
+    volumes:
+      - ./kibana/config/kibana.yml:${KIBANA_DIR}/config/kibana.yml:ro
+      - certs:$CERTS_DIR
+    environment:
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      ENCRYPTION_KEY: ${XPACK_ENCRYPTION_KEY}
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: $CERTS_DIR/ca/ca.crt
+      SERVER_SSL_ENABLED: "true"
+      SERVER_SSL_KEY: $CERTS_DIR/kibana/kibana.key
+      SERVER_SSL_CERTIFICATE: $CERTS_DIR/kibana/kibana.crt
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on: 
+      - esc01
+  logstash:
+    container_name: logstash
+    hostname: logstash
+    build:
+      context: logstash/
+    restart: unless-stopped
+    volumes:
+      - ./logstash/config/logstash.yml:${LOGSTASH_DIR}/config/logstash.yml:ro
+      - ./logstash/pipeline/logstash.conf:${LOGSTASH_DIR}/config/logstash.conf:ro
+      - certs:$CERTS_DIR
+    environment:
+      CONFIG_DIR: ${LOGSTASH_DIR}/config
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      LS_JAVA_OPTS: "-Xmx${LOGSTASH_HEAP} -Xms${LOGSTASH_HEAP}"
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: $CERTS_DIR/ca/ca.crt
+      SERVER_SSL_KEY: $CERTS_DIR/logstash/logstash.key
+      SERVER_SSL_CERTIFICATE: $CERTS_DIR/logstash/logstash.crt
+    networks:
+      - pipedrive
+    expose:
+     - 12201/udp
+     - 5042
+     - 9600
+     - 5000/tcp
+     - 5000/udp
+    depends_on: 
+      - esc01
+  
+  packetbeat:
+    container_name: packetbeat
+    hostname: packetbeat
+    user: root
+    build:
+      context: packetbeat/
+    restart: unless-stopped
+    cap_add: 
+      - NET_ADMIN
+      - NET_RAW
+    command: packetbeat -e -strict.perms=false
+    volumes:
+      - ./packetbeat/config/packetbeat.yml:${PACKETBEAT_DIR}/packetbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - certs:$CERTS_DIR
+    environment:
+      CONFIG_DIR: ${PACKETBEAT_DIR}/config
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+      LS_JAVA_OPTS: "-Xmx${PACKETBEAT_HEAP} -Xms${PACKETBEAT_HEAP}"
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: $CERTS_DIR/ca/ca.crt
+      SERVER_SSL_KEY: $CERTS_DIR/packetbeat/packetbeat.key
+      SERVER_SSL_CERTIFICATE: $CERTS_DIR/packetbeat/packetbeat.crt
+    depends_on: 
+      - logstash
+    networks:
+      - pipedrive
+
+  filebeat:
+    container_name: filebeat
+    hostname: filebeat
+    build:
+      context: filebeat/
+    restart: unless-stopped
+    command: filebeat -e -strict.perms=false
+    volumes:
+      - ./filebeat/config/filebeat.yml:${FILEBEAT_DIR}/filebeat.yml:ro
+	  - certs:$CERTS_DIR
+    environment:
+      CONFIG_DIR: ${FILEBEAT_DIR}/config
+      LS_JAVA_OPTS: "-Xmx${FILEBEAT_HEAP} -Xms${FILEBEAT_HEAP}"
+	  ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: $CERTS_DIR/ca/ca.crt
+      SERVER_SSL_KEY: $CERTS_DIR/filebeat/filebeat.key
+      SERVER_SSL_CERTIFICATE: $CERTS_DIR/filebeat/filebeat.crt
+    expose:
+      - 9000
+    networks:
+      - pipedrive
+    depends_on: 
+      - logstash
+
+
+
+
+
+volumes:
+  data01:
+    driver: local
+  data02:
+    driver: local
+  data03:
+    driver: local
+  certs:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge

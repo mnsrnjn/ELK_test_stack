@@ -1,0 +1,6 @@
+[elasticstack-7]
+name=Elasticsearch repository
+baseurl=https://artifacts.elastic.co/packages/oss-7.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1

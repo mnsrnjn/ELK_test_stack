@@ -20,7 +20,7 @@ output.logstash:
   
 output.elasticsearch:
   enabled: false
-  hosts: ["https://esc01:9200"]
-  ssl.certificate_authorities: ["${ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES}"]
-  ssl.certificate: "${SERVER_SSL_CERTIFICATE}"
-  ssl.key: "${SERVER_SSL_KEY"
+  hosts: ["https://elasticsearch1:9200"]
+  ssl.certificate_authorities: ["${CONFIG_DIR}/ca.crt"]
+  ssl.certificate: "${CONFIG_DIR}/filebeat.crt"
+  ssl.key: "${CONFIG_DIR}/filebeat.key"

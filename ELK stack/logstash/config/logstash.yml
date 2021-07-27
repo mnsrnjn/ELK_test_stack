@@ -10,6 +10,7 @@ xpack.management.elasticsearch.password: "${ELASTIC_PASSWORD}"
 xpack.monitoring.elasticsearch.username: "${ELASTIC_USERNAME}"
 xpack.monitoring.elasticsearch.password: "${ELASTIC_PASSWORD}"
 
+xpack.monitoring.elasticsearch.ssl.certificate_authority: "${CONFIG_DIR}/ca.crt"
 
 # Metricbeat settings
 monitoring.enabled: false
